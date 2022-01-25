@@ -18,8 +18,8 @@ class AnimatedSprite(Sprite):
 
 
 class Cat(pg.sprite.Sprite):
-    seq_sit = [cut_img(121, 1 + i * 55, 68, 54, f"cs{i}") for i in range(7)]
-    seq_flow = [cut_img(190, 1 + i * 55, 97, 51, f"cf{i}") for i in range(26)]
+    seq_sit = [cut_img(122, 1 + i * 55, 68, 54, f"cs{i}") for i in range(7)]
+    seq_flow = [cut_img(191, 1 + i * 55, 112, 54, f"cf{i}") for i in range(26)]
 
     def __init__(self, x, y, seq, *groups):
         super().__init__(groups)
@@ -30,7 +30,7 @@ class Cat(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.xf = self.rect.x = x
         self.yf = self.rect.y = y
-        self.tick_to = 20
+        self.tick_to = 100
         self.dir = 0
 
     def change_seq(self):
@@ -42,19 +42,19 @@ class Cat(pg.sprite.Sprite):
         self.sit = not self.sit
         self.image = self.seq[0]
 
-    def updade(self, x, y, ms):
+    def tick(self, x, y, ms):
         self.tick_to -= ms
         self.rect.x = self.xf = x
         self.rect.y = self.yf = y
         if self.tick_to < 0:
-            self.tick_to = 20
+            self.tick_to = 100
             if self.phase == len(self.seq) - 1:
-                if random.randint(0, 5) == 1:
-                    self.phase = 0
-                    self.change_seq()
-                else:
-                    self.dir = -1
+                self.dir = -1
             elif self.phase == 0:
+                if not self.sit:
+                    self.change_seq()
+                elif self.sit and not random.randint(0, 5):
+                    self.change_seq()
                 self.dir = 1
             self.phase += self.dir
             self.image = self.seq[self.phase]
@@ -131,7 +131,7 @@ class Bench(pg.sprite.Sprite):
         self.group = pg.sprite.Group()
         super().__init__(self.group)
         self.ll = LampClock(x - 20, y - 45, withClock, self.group)
-        self.cat = Cat(x, y, random.choice((Cat.seq_sit, Cat.seq_flow)), self.group)
+        self.cat = Cat(x, y - 29, random.choice((Cat.seq_sit, Cat.seq_flow)), self.group)
         self.image = cut_img(18, 98, 102, 45, "bench")
         self.rect = self.image.get_rect()
         self.rect.x = self.xf = x
@@ -142,15 +142,18 @@ class Bench(pg.sprite.Sprite):
         self.yf += y
         self.rect.x = self.xf
         self.rect.y = self.yf
+        self.cat.rect.x = self.xf
+        self.cat.rect.y = self.yf - 29
         self.ll.move(x, y)
-        self.cat.rect.x += x
-        self.cat.rect.y += y
+
+    def move_to(self, x, y):
+        self.move(x - self.xf, y - self.yf)
 
     def set_time(self, d1, d2, d3, d4):
         self.ll.set_time(d1, d2, d3, d4)
 
     def tick(self, ms):
-        self.cat.update(self.xf, self.yf, ms)
+        self.cat.tick(self.xf, self.yf - 29, ms)
 
 
 class Bird:
@@ -169,6 +172,7 @@ class Bird:
         self.bf_to = 100
         self.a = 0.0078125
         self.v = Vec(0.9)
+        self.score = 0
 
     def tick(self, ms):
         self.wave_to -= ms
@@ -191,6 +195,7 @@ class Bird:
         self.pos += self.v
         if self.pos.x > w // scale + 20:
             self.pos.x = -20
+            self.score += 1
         self.wing.move_to(self.pos.x - 2, self.pos.y + 5)
         self.body.move_to(self.pos.x, self.pos.y)
         self.eye.move_to(self.pos.x + 9, self.pos.y)
@@ -312,7 +317,7 @@ class Tube:
     def __init__(self):
         self.pos = Vec(w // scale // 2, h // scale // 2)
         self.v = 0
-        self.sprite = Sprite(self.pos.x - 8, self.pos.y - 620, cut_img(288, 1, 17, 1240, "tube"))
+        self.sprite = Sprite(self.pos.x - 8, self.pos.y - 620, cut_img(304, 1, 17, 1240, "tube"))
         self.h = h // scale
         self.fly = False
         self.sprite.mask = pg.mask.from_surface(self.sprite.image)
